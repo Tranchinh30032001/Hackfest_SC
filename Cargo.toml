@@ -1,0 +1,11 @@
+[package]
+name = "plats"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+near-sdk = "4.0.0"
+near-units = "0.2.0"
+uint = "0.9.5"
