@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedSet};
 use near_sdk::json_types::U128;
 use near_sdk::{
-    env, near_bindgen, require, AccountId, Balance, BorshStorageKey, Gas, PanicOnDefault,
+    env, log, near_bindgen, require, AccountId, Balance, BorshStorageKey, Gas, PanicOnDefault,
 };
 use std::collections::HashSet;
 
@@ -70,13 +70,22 @@ impl Contract {
             pause: false,
             sponsers: vec![],
         };
-        let mut list_event_id = HashSet::new();
-        list_event_id.insert(event_id.clone());
-        let client_event = ClientEvent {
-            events: list_event_id,
-        };
+        match self.client_to_event_id.get(&owner) {
+            Some(mut res) => {
+                res.events.insert(event_id.clone());
+                self.client_to_event_id.insert(&owner, &res);
+            }
+            None => {
+                let mut list_event_id = HashSet::new();
+                list_event_id.insert(event_id.clone());
+                let client_event = ClientEvent {
+                    events: list_event_id,
+                };
+                self.client_to_event_id.insert(&owner, &client_event);
+            }
+        }
+
         self.list_event.insert(&event_id);
-        self.client_to_event_id.insert(&owner, &client_event);
         self.events.insert(&event_id, &event);
         event
     }
@@ -86,7 +95,7 @@ impl Contract {
         if self.check_exist_event(&event_id) {
             assert_at_least_one_yocto();
             let amount: u128 = amount.into();
-            let sender_id = env::predecessor_account_id();
+            let sender_id = env::signer_account_id();
             let attached_deposit = env::attached_deposit();
             let event = self.events.get(&event_id).unwrap();
             require!(
@@ -98,8 +107,7 @@ impl Contract {
                 attached_deposit == amount,
                 "The attached_deposit must equal to the amount"
             );
-
-            self.internal_deposit(&sender_id, &event_id, amount)
+            self.internal_sponse(&sender_id, &event_id, amount)
         } else {
             env::panic_str("EventId not exist");
         }
@@ -110,7 +118,7 @@ impl Contract {
         if self.check_exist_event(&event_id) {
             assert_at_least_one_yocto();
             let amount: u128 = amount.into();
-            let sender_id = env::predecessor_account_id();
+            let sender_id = env::signer_account_id();
             let attached_deposit = env::attached_deposit();
             let event = self.events.get(&event_id).unwrap();
             require!(
@@ -122,7 +130,7 @@ impl Contract {
                 attached_deposit == amount,
                 "The attached_deposit must equal to the amount"
             );
-            self.more_deposit(&sender_id, &event_id, amount)
+            self.internal_more_sponse(&sender_id, &event_id, amount)
         } else {
             env::panic_str("EventId not exist");
         }
@@ -136,17 +144,15 @@ impl Contract {
                     assert_fee_storage_deposit();
                     let init_storage = env::storage_usage();
                     let receiver_id = env::signer_account_id();
-                    match self.sponser_to_sponse.get(&receiver_id) {
-                        Some(res) => {
-                            let amount = res
-                                .map_event_amount
-                                .get(event_id)
-                                .unwrap_or_else(|| env::panic_str("EventId is invalid"));
-                            self.claim_token(receiver_id, *amount, event_id.clone());
+                    match self.internal_unwrap_balance(&receiver_id, event_id) {
+                        Ok(balance) => {
+                            self.claim_token(receiver_id, balance, event_id.clone());
                         }
-                        None => {}
+                        Err(_) => env::panic_str("You havn't sponse this event yet"),
                     }
                     refund_deposit(init_storage);
+                } else {
+                    env::panic_str("This event has not been canceled so you cannot withdraw token");
                 }
             }
             None => {
@@ -194,14 +200,24 @@ impl Contract {
         self.internal_get_all_unactive_events()
     }
 
+    // trả về tất cả các event mà 1 client đã tạo.
+    pub fn get_all_event_client(&self) -> Vec<(EventId, String)> {
+        let account_id = env::signer_account_id();
+        let result = self.internal_get_all_event_client(account_id);
+        result
+    }
+
+    // hàm này trả về 1 vector tuple gồm event_id, name_event, và balance mà sponser đã sponse.
     pub fn get_sponsed(&self) -> Vec<(EventId, String, Balance)> {
         self.internal_get_sponsed()
     }
 
+    // hàm này trả về danh sách các sponser đã sponse cho 1 event cụ thể.
     pub fn get_all_sponser_event(&self, event_id: EventId) -> Vec<AccountId> {
         self.internal_get_all_sponser_event(event_id)
     }
 
+    // trả về số lượng token mà các sponser đã sponse vào 1 event cụ thể.
     pub fn get_total_token_event(&self, event_id: &EventId) -> Balance {
         self.internal_get_total_token_event(event_id)
     }

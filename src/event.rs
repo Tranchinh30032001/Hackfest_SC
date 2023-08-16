@@ -6,7 +6,7 @@ use near_sdk::{
     AccountId, Balance,
 };
 use std::collections::{HashMap, HashSet};
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum Status {
     Pending,
@@ -14,7 +14,7 @@ pub enum Status {
     Finish,
     Cancel,
 }
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, PartialEq, Eq, Debug)]
 pub struct Event {
     pub id: String,
     pub owner: AccountId,
@@ -32,7 +32,7 @@ pub struct ClientEvent {
     pub events: HashSet<EventId>,
 }
 
-#[derive(BorshSerialize, BorshDeserialize)]
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Sponse {
     pub events: HashSet<EventId>,
     pub map_event_amount: HashMap<EventId, Balance>,

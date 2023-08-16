@@ -24,7 +24,7 @@ impl Contract {
                             .filter(|item| *item != receiver_id)
                             .collect();
                         self.events.insert(&event_id, &res);
-                        self.sponser_to_sponse.remove(&receiver_id);
+                        self.handle_sponser_claim(receiver_id, event_id);
                     }
                     None => env::panic_str("EventId is not Found"),
                 }
@@ -32,6 +32,21 @@ impl Contract {
             PromiseResult::Failed => {
                 env::panic_str("user claim token failed");
             }
+        }
+    }
+
+    pub(crate) fn handle_sponser_claim(&mut self, sponser_id: AccountId, event_id: EventId) {
+        match self.sponser_to_sponse.get(&sponser_id) {
+            Some(mut res) => {
+                if res.events.len() == 1 {
+                    self.sponser_to_sponse.remove(&sponser_id);
+                } else {
+                    res.events.remove(&event_id);
+                    res.map_event_amount.remove(&event_id);
+                    self.sponser_to_sponse.insert(&sponser_id, &res);
+                }
+            }
+            None => env::panic_str("You haven't sponse this event before"),
         }
     }
 }
