@@ -1,7 +1,6 @@
 use crate::*;
 use near_sdk::Promise;
 use near_units::parse_near;
-use uint::construct_uint;
 
 pub(crate) fn assert_at_least_one_yocto() {
     assert!(
@@ -34,12 +33,3 @@ pub(crate) fn refund_deposit(init_storage: u64) {
         Promise::new(env::predecessor_account_id()).transfer(refund);
     }
 }
-
-// construct_uint! {
-//     /// 256-bit unsigned integer.
-//     pub struct U256(4);
-// }
-
-// pub fn u128_ratio(a: u128, num: u128, denom: u128) -> u128 {
-//     (U256::from(a) * U256::from(num) / U256::from(denom)).as_u128()
-// }

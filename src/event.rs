@@ -3,7 +3,6 @@ use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
-    collections::LookupMap,
     AccountId, Balance,
 };
 use std::collections::{HashMap, HashSet};
@@ -26,7 +25,6 @@ pub struct Event {
     pub status: Status,
     pub pause: bool,
     pub sponsers: Vec<AccountId>,
-    pub map_sponser_tokens: LookupMap<AccountId, Balance>,
 }
 
 #[derive(BorshSerialize, BorshDeserialize)]

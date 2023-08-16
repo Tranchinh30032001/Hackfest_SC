@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{external::ext_ft_fungible_token, *};
+use crate::external::ext_ft_fungible_token;
+use crate::external::ext_self;
+use crate::*;
 
 impl Contract {
     pub(crate) fn internal_unwrap_balance(
@@ -25,25 +27,21 @@ impl Contract {
         event_id: &EventId,
         amount: Balance,
     ) {
-        if self.check_exist_event(event_id) {
-            match self.internal_unwrap_balance(account_id, event_id) {
-                Ok(_) => {
-                    todo!();
-                }
-                Err(_) => {
-                    let mut map_event_amount = HashMap::new();
-                    map_event_amount.insert(event_id.clone(), amount);
-                    let mut events = HashSet::new();
-                    events.insert(event_id.clone());
-                    let sponse = Sponse {
-                        events,
-                        map_event_amount,
-                    };
-                    self.sponser_to_sponse.insert(account_id, &sponse);
-                }
+        match self.internal_unwrap_balance(account_id, event_id) {
+            Ok(_) => {
+                todo!();
             }
-        } else {
-            env::panic_str("EventId not exist");
+            Err(_) => {
+                let mut map_event_amount = HashMap::new();
+                map_event_amount.insert(event_id.clone(), amount);
+                let mut events = HashSet::new();
+                events.insert(event_id.clone());
+                let sponse = Sponse {
+                    events,
+                    map_event_amount,
+                };
+                self.sponser_to_sponse.insert(account_id, &sponse);
+            }
         }
     }
 
@@ -75,34 +73,23 @@ impl Contract {
         }
     }
 
-    pub(crate) fn pause_delete_event(&mut self, event_id: &EventId) {
-        match self.events.get(&event_id) {
-            Some(mut res) => {
-                res.pause = true;
-                //update
-                self.events.insert(event_id, &res);
-            }
-            None => env::panic_str("EventId is not a valid"),
-        }
-    }
-
-    pub(crate) fn claim_token(&self, receiver_id: AccountId, amount: Balance, token_id: AccountId) {
+    pub(crate) fn claim_token(&self, receiver_id: AccountId, amount: Balance, event_id: EventId) {
         // check transfer thanh cong roi moi update lai reward cung nhu balance owner.
-        ext_ft_fungible_token::ext(token_id.clone())
+        ext_ft_fungible_token::ext(env::current_account_id())
             .with_attached_deposit(1)
             .with_static_gas(FT_TRANSFER_GAS)
             .ft_transfer(receiver_id.clone(), amount.into(), None)
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(FT_TRANSFER_GAS)
-                    // if success update reward and owner
-                    .claim_token_callback(receiver_id, &token_id, amount),
+                    .claim_token_callback(receiver_id, amount, event_id),
             );
     }
 
-    pub(crate) fn get_all_events(&self) -> Vec<(EventId, String)> {
-        let arrEvent = self.list_event.to_vec();
-        let result = arrEvent
+    pub(crate) fn internal_get_all_events(&self) -> Vec<(EventId, String)> {
+        let arr_event = self.list_event.to_vec();
+        require!(arr_event.len() > 0, "No record events");
+        let result = arr_event
             .iter()
             .map(|item| {
                 let name_event = self.events.get(item).unwrap().name;
@@ -112,9 +99,10 @@ impl Contract {
         result
     }
 
-    pub(crate) fn get_all_active_events(&self) -> Vec<(EventId, String)> {
-        let arrEvent = self.list_event.to_vec();
-        let result = arrEvent
+    pub(crate) fn internal_get_all_active_events(&self) -> Vec<(EventId, String)> {
+        let arr_event = self.list_event.to_vec();
+        require!(arr_event.len() > 0, "No record events active");
+        let result = arr_event
             .iter()
             .filter(|item| {
                 let event = self
@@ -131,9 +119,10 @@ impl Contract {
         return result;
     }
 
-    pub(crate) fn get_all_un_active_events(&self) -> Vec<(EventId, String)> {
-        let arrEvent = self.list_event.to_vec();
-        let result = arrEvent
+    pub(crate) fn internal_get_all_unactive_events(&self) -> Vec<(EventId, String)> {
+        let arr_event = self.list_event.to_vec();
+        require!(arr_event.len() > 0, "No record events un active");
+        let result = arr_event
             .iter()
             .filter(|item| {
                 let event = self
@@ -150,7 +139,7 @@ impl Contract {
         return result;
     }
 
-    pub(crate) fn get_sponsed(&self) -> Vec<(EventId, String, Balance)> {
+    pub(crate) fn internal_get_sponsed(&self) -> Vec<(EventId, String, Balance)> {
         let signer = env::signer_account_id();
         match self.sponser_to_sponse.get(&signer) {
             Some(res) => {
@@ -169,7 +158,7 @@ impl Contract {
         }
     }
 
-    pub(crate) fn get_all_sponser_event(&self, event_id: EventId) -> Vec<AccountId> {
+    pub(crate) fn internal_get_all_sponser_event(&self, event_id: EventId) -> Vec<AccountId> {
         match self.events.get(&event_id) {
             Some(res) => {
                 return res.sponsers;
@@ -178,7 +167,7 @@ impl Contract {
         }
     }
 
-    pub(crate) fn get_total_token_event(&self, event_id: &EventId) -> Balance {
+    pub(crate) fn internal_get_total_token_event(&self, event_id: &EventId) -> Balance {
         match self.events.get(&event_id) {
             Some(res) => {
                 return res.total;
