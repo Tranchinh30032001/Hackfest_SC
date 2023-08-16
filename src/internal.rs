@@ -41,35 +41,38 @@ impl Contract {
                     map_event_amount,
                 };
                 self.sponser_to_sponse.insert(account_id, &sponse);
+                let mut event = self.events.get(&event_id).unwrap();
+                event.sponsers.push(account_id.clone());
+                event.total += amount;
+                self.events.insert(&event_id, &event);
             }
         }
     }
 
-    pub(crate) fn update_deposit(
+    pub(crate) fn more_deposit(
         &mut self,
         account_id: &AccountId,
         event_id: &EventId,
         amount: Balance,
     ) {
-        if self.check_exist_event(event_id) {
-            match self.internal_unwrap_balance(account_id, event_id) {
-                Ok(balance) => {
-                    if let Some(new_balance) = balance.checked_add(amount) {
-                        match self.sponser_to_sponse.get(account_id) {
-                            Some(mut sponse) => {
-                                // overwrite
-                                sponse
-                                    .map_event_amount
-                                    .insert(event_id.clone(), new_balance);
-                            }
-                            None => env::panic_str("You hasn't deposit this event yet"),
+        match self.internal_unwrap_balance(account_id, event_id) {
+            Ok(balance) => {
+                if let Some(new_balance) = balance.checked_add(amount) {
+                    match self.sponser_to_sponse.get(account_id) {
+                        Some(mut sponse) => {
+                            // overwrite
+                            sponse
+                                .map_event_amount
+                                .insert(event_id.clone(), new_balance);
+                            let mut event = self.events.get(&event_id).unwrap();
+                            event.total += amount;
+                            self.events.insert(event_id, &event);
                         }
+                        None => env::panic_str("You hasn't deposit this event yet"),
                     }
                 }
-                Err(err) => env::panic_str(&err),
             }
-        } else {
-            env::panic_str("EventId not exist");
+            Err(err) => env::panic_str(&err),
         }
     }
 

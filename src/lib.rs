@@ -1,11 +1,10 @@
-use std::collections::HashSet;
-
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedSet};
 use near_sdk::json_types::U128;
 use near_sdk::{
     env, near_bindgen, require, AccountId, Balance, BorshStorageKey, Gas, PanicOnDefault,
 };
+use std::collections::HashSet;
 
 pub type EventId = String;
 pub const FT_TRANSFER_GAS: Gas = Gas(10_000_000_000_000);
@@ -78,6 +77,7 @@ impl Contract {
         };
         self.list_event.insert(&event_id);
         self.client_to_event_id.insert(&owner, &client_event);
+        self.events.insert(&event_id, &event);
         event
     }
 
@@ -106,16 +106,26 @@ impl Contract {
     }
 
     #[payable]
-    pub fn update_sponse_native(&mut self, event_id: EventId, amount: U128) {
-        assert_at_least_one_yocto();
-        let amount: u128 = amount.into();
-        let sender_id = env::predecessor_account_id();
-        let attached_deposit = env::attached_deposit();
-        require!(
-            attached_deposit == amount,
-            "The attached_deposit must equal to the amount"
-        );
-        self.update_deposit(&sender_id, &event_id, amount)
+    pub fn more_sponse_native(&mut self, event_id: EventId, amount: U128) {
+        if self.check_exist_event(&event_id) {
+            assert_at_least_one_yocto();
+            let amount: u128 = amount.into();
+            let sender_id = env::predecessor_account_id();
+            let attached_deposit = env::attached_deposit();
+            let event = self.events.get(&event_id).unwrap();
+            require!(
+                event.iat <= env::block_timestamp(),
+                "The event hasn't happened yet"
+            );
+            require!(event.exp >= env::block_timestamp(), "The event has ended");
+            require!(
+                attached_deposit == amount,
+                "The attached_deposit must equal to the amount"
+            );
+            self.more_deposit(&sender_id, &event_id, amount)
+        } else {
+            env::panic_str("EventId not exist");
+        }
     }
 
     #[payable]
