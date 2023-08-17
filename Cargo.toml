@@ -1,11 +1,14 @@
-[package]
-name = "plats"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "./hackathon"
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-near-sdk = "4.0.0"
-near-units = "0.2.0"
-uint = "0.9.5"
+[profile.release]
+codegen-units = 1
+# s = optimize for binary size ("z" would additionally turn off loop vectorization)
+opt-level = "z"
+# link time optimization
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true

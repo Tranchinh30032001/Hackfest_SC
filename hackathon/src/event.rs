@@ -14,7 +14,8 @@ pub enum Status {
     Finish,
     Cancel,
 }
-#[derive(BorshDeserialize, BorshSerialize, PartialEq, Eq, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Event {
     pub id: String,
     pub owner: AccountId,
@@ -42,6 +43,22 @@ impl Contract {
         match self.events.get(event_id) {
             Some(_) => true,
             None => false,
+        }
+    }
+    pub(crate) fn check_owner_event(&self, event_id: &EventId) -> bool {
+        match self.events.get(event_id) {
+            Some(res) => res.owner == env::signer_account_id(),
+            None => {
+                env::panic_str("EventId is not found");
+            }
+        }
+    }
+    pub(crate) fn internal_watch_detail_event(&self, event_id: &EventId) -> Event {
+        match self.events.get(&event_id) {
+            Some(res) => res,
+            None => {
+                env::panic_str("EventId is not found");
+            }
         }
     }
 }
