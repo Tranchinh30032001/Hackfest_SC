@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use near_sdk::Promise;
 
-use crate::external::ext_ft_fungible_token;
 use crate::external::ext_self;
 use crate::*;
 

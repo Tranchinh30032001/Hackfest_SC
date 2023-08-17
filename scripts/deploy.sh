@@ -1,0 +1,1 @@
+near deploy --accountId fakert1.testnet --wasmFile ./res/hackathon.wasm

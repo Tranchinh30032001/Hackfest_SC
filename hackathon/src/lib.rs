@@ -56,8 +56,10 @@ impl Contract {
     #[payable]
     pub fn create_event(&mut self, event_id: String, name_event: String, duration: u64) -> Event {
         assert_at_least_one_yocto();
-        let time_start = env::block_timestamp();
+        let time_start = env::block_timestamp_ms();
+        log!("iat {}", time_start.to_string());
         let time_end = time_start + duration;
+        log!("exp {}", time_end.to_string());
         let owner = env::signer_account_id();
         let event = Event {
             id: event_id.clone(),
@@ -99,10 +101,13 @@ impl Contract {
             let attached_deposit = env::attached_deposit();
             let event = self.events.get(&event_id).unwrap();
             require!(
-                event.iat <= env::block_timestamp(),
+                event.iat <= env::block_timestamp_ms(),
                 "The event hasn't happened yet"
             );
-            require!(event.exp >= env::block_timestamp(), "The event has ended");
+            require!(
+                event.exp >= env::block_timestamp_ms(),
+                "The event has ended"
+            );
             require!(
                 attached_deposit == amount,
                 "The attached_deposit must equal to the amount"
@@ -122,10 +127,13 @@ impl Contract {
             let attached_deposit = env::attached_deposit();
             let event = self.events.get(&event_id).unwrap();
             require!(
-                event.iat <= env::block_timestamp(),
+                event.iat <= env::block_timestamp_ms(),
                 "The event hasn't happened yet"
             );
-            require!(event.exp >= env::block_timestamp(), "The event has ended");
+            require!(
+                event.exp >= env::block_timestamp_ms(),
+                "The event has ended"
+            );
             require!(
                 attached_deposit == amount,
                 "The attached_deposit must equal to the amount"
@@ -141,7 +149,7 @@ impl Contract {
         match self.events.get(event_id) {
             Some(res) => {
                 if res.status == Status::Cancel {
-                    assert_fee_storage_deposit();
+                    assert_at_least_one_yocto();
                     let init_storage = env::storage_usage();
                     let receiver_id = env::signer_account_id();
                     match self.internal_unwrap_balance(&receiver_id, event_id) {
@@ -160,16 +168,23 @@ impl Contract {
             }
         }
     }
-
+    #[payable]
     pub fn cancel_events(&mut self, event_id: EventId) {
         if self.check_exist_event(&event_id) {
             assert_at_least_one_yocto();
+            require!(
+                self.check_owner_event(&event_id),
+                "You are not allowed to cancel"
+            );
             let mut event = self.events.get(&event_id).unwrap();
             require!(
-                event.iat <= env::block_timestamp(),
+                event.iat <= env::block_timestamp_ms(),
                 "The event hasn't happened yet"
             );
-            require!(event.exp >= env::block_timestamp(), "The event has ended");
+            require!(
+                event.exp >= env::block_timestamp_ms(),
+                "The event has ended"
+            );
             event.status = Status::Cancel;
             self.events.insert(&event_id, &event);
         } else {
@@ -220,5 +235,9 @@ impl Contract {
     // trả về số lượng token mà các sponser đã sponse vào 1 event cụ thể.
     pub fn get_total_token_event(&self, event_id: &EventId) -> Balance {
         self.internal_get_total_token_event(event_id)
+    }
+
+    pub fn watch_detail_event(&self, event_id: &EventId) -> Event {
+        self.internal_watch_detail_event(event_id)
     }
 }
