@@ -8,6 +8,7 @@ impl Contract {
         receiver_id: AccountId,
         amount: Balance,
         event_id: EventId,
+        token: Token,
     ) {
         assert_eq!(env::promise_results_count(), 1, "ERR_TOO_MANY_RESULTS");
         match env::promise_result(0) {
@@ -16,7 +17,11 @@ impl Contract {
                 //update total, list sponser of event, and map sponser_to_sponse
                 match self.events.get(&event_id) {
                     Some(mut res) => {
-                        res.total -= amount;
+                        if token == Token::NEAR {
+                            res.total_near -= amount;
+                        } else {
+                            res.total_usdt -= amount;
+                        }
                         res.sponsers = res
                             .sponsers
                             .iter()
@@ -47,6 +52,21 @@ impl Contract {
                 }
             }
             None => env::panic_str("You haven't sponse this event before"),
+        }
+    }
+
+    pub fn storage_deposit_callback_add_token(&mut self, token_id: AccountId) {
+        assert_eq!(env::promise_results_count(), 1, "ERR_TOO_MANY_RESULTS");
+
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                //add whitelisted token of smart contract
+                log!("storage deposit successfully");
+            }
+            PromiseResult::Failed => {
+                env::panic_str("storage_deposit for owner failed");
+            }
         }
     }
 }
