@@ -1,1 +1,1 @@
-near deploy --accountId fakert1.testnet --wasmFile ./res/hackathon.wasm
+near deploy --accountId hkt2plats.testnet --wasmFile ./res/hackathon.wasm

@@ -1,6 +1,6 @@
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
-    use crate::event::Event;
+    use crate::event::{Amount, Event};
     use crate::Contract;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::{accounts, VMContextBuilder};
@@ -24,17 +24,15 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context);
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
         let event = Event {
             id: String::from("001"),
             owner: accounts(2),
             name: String::from("Panana"),
-            iat: 0,
-            exp: 60000,
-            total: 0,
+            total_near: 0,
+            total_usdt: 0,
             status: crate::event::Status::Active,
-            pause: false,
             sponsers: vec![],
         };
         let mut result = Vec::new();
@@ -52,11 +50,11 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context);
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
-        contract.create_event(String::from("006"), String::from("AHAHA6"), 60000);
-        contract.create_event(String::from("005"), String::from("AHAHA5"), 60000);
-        contract.create_event(String::from("007"), String::from("AHAHA5"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("006"), String::from("AHAHA6"));
+        contract.create_event(String::from("005"), String::from("AHAHA5"));
+        contract.create_event(String::from("007"), String::from("AHAHA5"));
         assert_eq!(contract.get_all_event_client().len(), 5);
     }
 
@@ -67,12 +65,12 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
 
         context.signer_account_id = accounts(0);
-        contract.create_event(String::from("003"), String::from("Panana3"), 60000);
-        contract.create_event(String::from("004"), String::from("AHAHA4"), 60000);
+        contract.create_event(String::from("003"), String::from("Panana3"));
+        contract.create_event(String::from("004"), String::from("AHAHA4"));
 
         let mut result = Vec::new();
         result.push((String::from("001"), String::from("Panana")));
@@ -91,9 +89,9 @@ mod tests {
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
 
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
-        contract.create_event(String::from("003"), String::from("AHAHA"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("003"), String::from("AHAHA"));
 
         contract.sponse_native(String::from("001"), U128(5000));
         contract.sponse_native(String::from("002"), U128(5000));
@@ -136,9 +134,9 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
-        contract.create_event(String::from("003"), String::from("AHAHA"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("003"), String::from("AHAHA"));
         contract.sponse_native(String::from("001"), U128(5000));
         contract.sponse_native(String::from("002"), U128(5000));
         contract.sponse_native(String::from("003"), U128(5000));
@@ -154,9 +152,9 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
-        contract.create_event(String::from("003"), String::from("AHAHA"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("003"), String::from("AHAHA"));
 
         contract.sponse_native(String::from("001"), U128(5000));
 
@@ -179,9 +177,9 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
-        contract.create_event(String::from("003"), String::from("AHAHA"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("003"), String::from("AHAHA"));
 
         contract.sponse_native(String::from("001"), U128(5000));
 
@@ -192,8 +190,15 @@ mod tests {
         context.signer_account_id = accounts(1);
         testing_env!(context);
         contract.sponse_native(String::from("001"), U128(5000));
+        contract.more_sponse_usdt(String::from("001"), U128(2000));
 
-        assert_eq!(contract.get_total_token_event(&String::from("001")), 15000);
+        assert_eq!(
+            contract.get_total_token_event(&String::from("001")),
+            Amount {
+                token_near: 15000,
+                token_usdt: 2000
+            }
+        );
     }
 
     #[test]
@@ -203,11 +208,11 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 10000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 20000);
-        contract.create_event(String::from("006"), String::from("AHAHA6"), 30000);
-        contract.create_event(String::from("005"), String::from("AHAHA5"), 40000);
-        contract.create_event(String::from("007"), String::from("AHAHA5"), 50000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("006"), String::from("AHAHA6"));
+        contract.create_event(String::from("005"), String::from("AHAHA5"));
+        contract.create_event(String::from("007"), String::from("AHAHA5"));
 
         context.block_timestamp = 35000;
         testing_env!(context);
@@ -221,11 +226,11 @@ mod tests {
         context.signer_account_id = accounts(2);
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
-        contract.create_event(String::from("001"), String::from("Panana"), 10000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 20000);
-        contract.create_event(String::from("006"), String::from("AHAHA6"), 30000);
-        contract.create_event(String::from("005"), String::from("AHAHA5"), 40000);
-        contract.create_event(String::from("007"), String::from("AHAHA5"), 50000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("006"), String::from("AHAHA6"));
+        contract.create_event(String::from("005"), String::from("AHAHA5"));
+        contract.create_event(String::from("007"), String::from("AHAHA5"));
 
         contract.cancel_events(String::from("001"));
         testing_env!(context);
@@ -240,9 +245,9 @@ mod tests {
         testing_env!(context.clone());
         let mut contract = Contract::new(accounts(1));
 
-        contract.create_event(String::from("001"), String::from("Panana"), 60000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
-        contract.create_event(String::from("003"), String::from("AHAHA"), 60000);
+        contract.create_event(String::from("001"), String::from("Panana"));
+        contract.create_event(String::from("002"), String::from("AHAHA"));
+        contract.create_event(String::from("003"), String::from("AHAHA"));
 
         contract.sponse_native(String::from("001"), U128(5000));
         // contract.sponse_native(String::from("002"), U128(5000));
@@ -263,41 +268,10 @@ mod tests {
                 .get(&String::from("001"))
                 .unwrap()
                 .clone(),
-            65000
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "The event has ended")]
-    fn test_more_sponse_native_overtime() {
-        let mut context = get_context();
-        context.attached_deposit = 5_000;
-        context.signer_account_id = accounts(2);
-        testing_env!(context.clone());
-        let mut contract = Contract::new(accounts(1));
-
-        contract.create_event(String::from("001"), String::from("Panana"), 10000);
-        contract.create_event(String::from("002"), String::from("AHAHA"), 60000);
-
-        contract.sponse_native(String::from("001"), U128(5000));
-        contract.sponse_native(String::from("002"), U128(5000));
-        // contract.sponse_native(String::from("003"), U128(5000));
-
-        context.attached_deposit = 20000;
-        context.block_timestamp = 30000;
-        testing_env!(context.clone());
-        contract.more_sponse_native(String::from("001"), U128(20000));
-
-        assert_eq!(
-            contract
-                .sponser_to_sponse
-                .get(&accounts(2))
-                .unwrap()
-                .map_event_amount
-                .get(&String::from("001"))
-                .unwrap()
-                .clone(),
-            25000
+            &Amount {
+                token_near: 65000,
+                token_usdt: 0
+            }
         );
     }
 }

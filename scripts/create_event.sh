@@ -1,2 +1,2 @@
 #!/bin/bash
-near call fakert1.testnet create_event '{"event_id": "003", "name_event": "hallowwen3", "duration": 20000000}' --accountId $master --depositYocto 1
+near call hkt2plats.testnet create_event '{"event_id": "004", "name_event": "hallowwen4"}' --accountId sub2.hkt2plats.testnet --depositYocto 1
