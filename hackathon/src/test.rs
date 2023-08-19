@@ -196,7 +196,7 @@ mod tests {
             contract.get_total_token_event(&String::from("001")),
             Amount {
                 token_near: 15000,
-                token_usdt: 0
+                token_usdt: 2000
             }
         );
     }

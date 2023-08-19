@@ -1,2 +1,2 @@
 #!/bin/bash
-near call fakert1.testnet cancel_events '{"event_id": "003"}' --accountId fakert1.testnet --depositYocto 1
+near call hkt2plats.testnet cancel_events '{"event_id": "003"}' --accountId sub2.hkt2plats.testnet --depositYocto 1

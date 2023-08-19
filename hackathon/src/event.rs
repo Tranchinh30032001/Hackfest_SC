@@ -1,7 +1,6 @@
 use crate::EventId;
 use crate::*;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
-use near_sdk::collections::UnorderedMap;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::PromiseOrValue;
 use near_sdk::{
@@ -93,13 +92,39 @@ impl FungibleTokenReceiver for Contract {
         let token_id = env::predecessor_account_id();
         env::log_str(format!("token_id:{}", token_id).as_str());
         // case user deposit FT with msg on the format: event event_id
+        // msg == event_id or more event_id
         if msg != "" {
-            let amount = amount.into();
-            self.internal_sponse(&sender_id, &msg, amount, Token::USDT);
-            PromiseOrValue::Value(U128(0))
-        }
-        // todo
-        else {
+            let split_msg: Vec<&str> = msg.split(" ").collect();
+            if split_msg.len() == 1 {
+                if self.check_exist_event(&msg) {
+                    let sender_id = env::signer_account_id();
+                    let result = self.internal_sponse(&sender_id, &msg, amount.into(), Token::USDT);
+                    if result {
+                        PromiseOrValue::Value(U128(0))
+                    } else {
+                        PromiseOrValue::Value(amount)
+                    }
+                } else {
+                    env::panic_str("EventId not exist");
+                }
+            } else {
+                let event_id = split_msg.iter().nth(1).unwrap_or_else(|| {
+                    env::panic_str(
+                        "The message that the user deposited is not in the correct format",
+                    )
+                });
+                let result = self.internal_more_sponse_usdt(
+                    &sender_id,
+                    &String::from(*event_id),
+                    amount.into(),
+                );
+                if result {
+                    PromiseOrValue::Value(U128(0))
+                } else {
+                    PromiseOrValue::Value(amount)
+                }
+            }
+        } else {
             log!("Fungible token is unvalid");
             PromiseOrValue::Value(amount)
         }

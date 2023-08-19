@@ -1,2 +1,2 @@
 #!/bin/bash
-near call fakert1.testnet get_sponsed '{}' --accountId sub1.fakert1.testnet
+near call hkt2plats.testnet get_sponsed '{}' --accountId sub1.hkt2plats.testnet

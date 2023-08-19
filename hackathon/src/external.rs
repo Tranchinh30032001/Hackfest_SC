@@ -4,15 +4,20 @@ use near_sdk::{ext_contract, AccountId};
 
 #[ext_contract(ext_self)]
 pub trait CallbackSelf {
-    fn claim_token_callback(
+    fn claim_token_callback_near(
         &mut self,
         receiver_id: &AccountId,
         amount: Balance,
         event_id: &EventId,
-        token: Token,
+    );
+    fn claim_token_callback_usdt(
+        &mut self,
+        receiver_id: &AccountId,
+        amount: Balance,
+        event_id: &EventId,
     );
     fn balance_of_callback(&self, account_id: &AccountId) -> Balance;
-    fn storage_deposit_callback_add_token(&mut self, token_id: AccountId);
+    fn storage_deposit_callback_add_token(&mut self);
 }
 #[ext_contract(ext_ft_fungible_token)]
 pub trait FungibleTokenCore {

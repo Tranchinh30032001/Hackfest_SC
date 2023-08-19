@@ -32,7 +32,7 @@ impl Contract {
         event_id: &EventId,
         amount: Balance,
         token: Token,
-    ) {
+    ) -> bool {
         match self.internal_unwrap_balance(account_id, event_id) {
             Ok(_) => env::panic_str("You have deposited this event before"),
             Err(_) => {
@@ -76,63 +76,75 @@ impl Contract {
                     event.total_usdt += amount;
                 }
                 self.events.insert(&event_id, &event);
+                true
             }
         }
     }
 
-    pub(crate) fn internal_more_sponse(
+    pub(crate) fn internal_more_sponse_near(
         &mut self,
         account_id: &AccountId,
         event_id: &EventId,
         balance: Balance,
-        token: Token,
-    ) {
+    ) -> bool {
         match self.internal_unwrap_balance(account_id, event_id) {
             Ok(amount) => {
-                if token == Token::NEAR {
-                    if let Some(new_balance) = amount.token_near.checked_add(balance) {
-                        match self.sponser_to_sponse.get(account_id) {
-                            Some(mut sponse) => {
-                                // overwrite
-                                let token_usdt =
-                                    sponse.map_event_amount.get(event_id).unwrap().token_usdt;
-                                let new_amount = Amount {
-                                    token_near: new_balance,
-                                    token_usdt,
-                                };
-                                sponse.map_event_amount.insert(event_id.clone(), new_amount);
-                                self.sponser_to_sponse.insert(&account_id, &sponse);
-                                let mut event = self.events.get(&event_id).unwrap();
-                                event.total_near += balance;
-                                self.events.insert(event_id, &event);
-                            }
-                            None => env::panic_str("You hasn't deposit this event yet"),
+                if let Some(new_balance) = amount.token_near.checked_add(balance) {
+                    match self.sponser_to_sponse.get(account_id) {
+                        Some(mut sponse) => {
+                            // overwrite
+                            let token_usdt =
+                                sponse.map_event_amount.get(event_id).unwrap().token_usdt;
+                            let new_amount = Amount {
+                                token_near: new_balance,
+                                token_usdt,
+                            };
+                            sponse.map_event_amount.insert(event_id.clone(), new_amount);
+                            self.sponser_to_sponse.insert(&account_id, &sponse);
+                            let mut event = self.events.get(&event_id).unwrap();
+                            event.total_near += balance;
+                            self.events.insert(event_id, &event);
+                            true
                         }
-                    } else {
-                        env::panic_str("balance near is invalid");
+                        None => env::panic_str("You hasn't deposit this event yet"),
                     }
-                } else if token == Token::USDT {
-                    if let Some(new_balance) = amount.token_usdt.checked_add(balance) {
-                        match self.sponser_to_sponse.get(account_id) {
-                            Some(mut sponse) => {
-                                // overwrite
-                                let token_near =
-                                    sponse.map_event_amount.get(event_id).unwrap().token_near;
-                                let new_amount = Amount {
-                                    token_near,
-                                    token_usdt: new_balance,
-                                };
-                                sponse.map_event_amount.insert(event_id.clone(), new_amount);
-                                self.sponser_to_sponse.insert(&account_id, &sponse);
-                                let mut event = self.events.get(&event_id).unwrap();
-                                event.total_usdt += balance;
-                                self.events.insert(event_id, &event);
-                            }
-                            None => env::panic_str("You hasn't deposit this event yet"),
+                } else {
+                    env::panic_str("balance near is invalid");
+                }
+            }
+            Err(_) => env::panic_str("You haven't sponse this event before"),
+        }
+    }
+
+    pub(crate) fn internal_more_sponse_usdt(
+        &mut self,
+        account_id: &AccountId,
+        event_id: &EventId,
+        balance: Balance,
+    ) -> bool {
+        match self.internal_unwrap_balance(account_id, event_id) {
+            Ok(amount) => {
+                if let Some(new_balance) = amount.token_usdt.checked_add(balance) {
+                    match self.sponser_to_sponse.get(account_id) {
+                        Some(mut sponse) => {
+                            // overwrite
+                            let token_near =
+                                sponse.map_event_amount.get(event_id).unwrap().token_near;
+                            let new_amount = Amount {
+                                token_near,
+                                token_usdt: new_balance,
+                            };
+                            sponse.map_event_amount.insert(event_id.clone(), new_amount);
+                            self.sponser_to_sponse.insert(&account_id, &sponse);
+                            let mut event = self.events.get(&event_id).unwrap();
+                            event.total_usdt += balance;
+                            self.events.insert(event_id, &event);
+                            true
                         }
-                    } else {
-                        env::panic_str("balance usdt is invalid");
+                        None => env::panic_str("You hasn't deposit this event yet"),
                     }
+                } else {
+                    env::panic_str("balance usdt is invalid");
                 }
             }
             Err(_) => env::panic_str("You haven't sponse this event before"),
@@ -149,7 +161,7 @@ impl Contract {
         Promise::new(receiver_id.clone()).transfer(amount).then(
             ext_self::ext(env::current_account_id())
                 .with_static_gas(FT_TRANSFER_GAS)
-                .claim_token_callback(receiver_id, amount, &event_id, Token::NEAR),
+                .claim_token_callback_near(receiver_id, amount, &event_id),
         );
     }
 
@@ -159,7 +171,7 @@ impl Contract {
         amount: Balance,
         event_id: EventId,
     ) {
-        let token_id: AccountId = "aa".parse().unwrap();
+        let token_id: AccountId = "ft1.tranchinh2001.testnet".parse().unwrap();
         ext_ft_fungible_token::ext(token_id.clone())
             .with_attached_deposit(1)
             .with_static_gas(FT_TRANSFER_GAS)
@@ -168,7 +180,7 @@ impl Contract {
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(FT_TRANSFER_GAS)
                     // if success update reward and owner
-                    .claim_token_callback(&receiver_id, amount, &event_id, Token::USDT),
+                    .claim_token_callback_usdt(&receiver_id, amount, &event_id),
             );
     }
 

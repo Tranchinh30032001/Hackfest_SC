@@ -1,2 +1,2 @@
 #!/bin/bash
-near view fakert1.testnet get_all_events '{}'
+near view hkt2plats.testnet get_all_events '{}'

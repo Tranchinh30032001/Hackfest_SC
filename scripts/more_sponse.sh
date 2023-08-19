@@ -1,2 +1,2 @@
 #!/bin/bash
-near call fakert1.testnet more_sponse_native '{"event_id": "001", "amount": "10000"}' --accountId tranchinh2001.testnet --depositYocto 1
+near call hkt2plats.testnet more_sponse_native '{"event_id": "001", "amount": "1000000000000000000000000", "token": "NEAR"}' --accountId sub1.hkt2plats.testnet --depositYocto 1000000000000000000000000

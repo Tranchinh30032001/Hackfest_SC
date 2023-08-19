@@ -1,2 +1,2 @@
 #!/bin/bash
-near view fakert1.testnet get_all_event_client '{}' --acountId sub1.fakert1.testnet
+near call hkt2plats.testnet get_all_event_client '{}' --accountId sub2.hkt2plats.testnet

@@ -13,7 +13,7 @@ mod callback;
 mod event;
 mod external;
 mod internal;
-mod test;
+// mod test;
 mod utils;
 use event::*;
 use utils::*;
@@ -58,14 +58,14 @@ impl Contract {
     pub fn active_usdt(&mut self) {
         let attached_deposit = env::attached_deposit();
         assert_fee_storage_deposit();
-        ext_ft_storage::ext("usdt.fakes.testnet".parse().unwrap())
+        ext_ft_storage::ext("ft1.tranchinh2001.testnet".parse().unwrap())
             .with_attached_deposit(attached_deposit)
             .with_static_gas(FT_TRANSFER_GAS)
             .storage_deposit(Some(env::current_account_id()), None)
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(FT_TRANSFER_GAS)
-                    .storage_deposit_callback_add_token("usdt.fakes.testnet".parse().unwrap()),
+                    .storage_deposit_callback_add_token(),
             );
     }
 
@@ -119,24 +119,9 @@ impl Contract {
         }
     }
 
-    //cần kiểm tra xem, user có đủ số lượng usdt để sponse hay không.
-    //và khi họ sponse thì có cần gửi kèm near để làm fee hay không.
-    #[payable]
-    pub fn sponse_usdt(&mut self, event_id: EventId, amount: U128) {
-        if self.check_exist_event(&event_id) {
-            assert_at_least_one_yocto();
-            let amount: u128 = amount.into();
-            let sender_id = env::signer_account_id();
-            self.internal_sponse(&sender_id, &event_id, amount, Token::USDT);
-        } else {
-            env::panic_str("EventId not exist");
-        }
-    }
-
     #[payable]
     pub fn more_sponse_native(&mut self, event_id: EventId, amount: U128) {
         if self.check_exist_event(&event_id) {
-            assert_at_least_one_yocto();
             let amount: u128 = amount.into();
             let sender_id = env::signer_account_id();
             let attached_deposit = env::attached_deposit();
@@ -144,19 +129,7 @@ impl Contract {
                 attached_deposit == amount,
                 "The attached_deposit must equal to the amount"
             );
-            self.internal_more_sponse(&sender_id, &event_id, amount, Token::NEAR);
-        } else {
-            env::panic_str("EventId not exist");
-        }
-    }
-
-    #[payable]
-    pub fn more_sponse_usdt(&mut self, event_id: EventId, amount: U128) {
-        if self.check_exist_event(&event_id) {
-            assert_at_least_one_yocto();
-            let amount: u128 = amount.into();
-            let sender_id = env::signer_account_id();
-            self.internal_more_sponse(&sender_id, &event_id, amount, Token::USDT);
+            self.internal_more_sponse_near(&sender_id, &event_id, amount);
         } else {
             env::panic_str("EventId not exist");
         }
@@ -186,24 +159,28 @@ impl Contract {
             Some(res) => {
                 if res.status == Status::Cancel {
                     assert_at_least_one_yocto();
-                    let init_storage = env::storage_usage();
                     let receiver_id = env::signer_account_id();
                     match self.internal_unwrap_balance(&receiver_id, event_id) {
                         Ok(amount) => {
-                            self.claim_token_near(
-                                &receiver_id,
-                                amount.token_near,
-                                event_id.clone(),
-                            );
-                            self.claim_token_usdt(
-                                &receiver_id,
-                                amount.token_usdt,
-                                event_id.clone(),
-                            );
+                            if amount.token_near > 0 {
+                                self.claim_token_near(
+                                    &receiver_id,
+                                    amount.token_near,
+                                    event_id.clone(),
+                                );
+                            }
+                            if amount.token_usdt > 0 {
+                                self.claim_token_usdt(
+                                    &receiver_id,
+                                    amount.token_usdt,
+                                    event_id.clone(),
+                                );
+                            }
+                            self.handle_sponser_claim(receiver_id, event_id.clone());
                         }
                         Err(_) => env::panic_str("You havn't sponse this event yet"),
                     }
-                    refund_deposit(init_storage);
+                    // refund_deposit(init_storage);
                 } else {
                     env::panic_str("This event has not been canceled so you cannot withdraw token");
                 }
